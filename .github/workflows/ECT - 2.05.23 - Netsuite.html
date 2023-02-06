@@ -1,0 +1,2212 @@
+<!-- This application is being developed by Lucas Eimert (leimert@ebsco.com) to be used for GCS Escalations-->
+<!-- Latest iteration: 12/07/22: Enhancing dropdown functionality and adding full range of options -->
+<!-- Latest iteration: 1/18/22: Fixed dropdown bug -->
+<!-- Latest iteration: 1/21/22: Button hiding is now working. Clever PI is the current demo for this. Significant expansion of taxonomy form functionality. EDS > Catalog/IR demonstrates (and Sales > Subscription Issue > Expired order this currently. Resetting all buttons works. The taxonomy logic can be iterated on from here. If a none directive is set for the same ID for a button, the inline-block will not work if it is placed in the same functions in Javascript. 54 total buttons thus far.-->
+<!-- Latest iteration: 1/22/22: 59 total buttons in form, taxonomy hiding based on selections is working. Expanding options. Added EBSCO logo to form. Adjusted form dimensions to be more compact.-->
+<!-- Latest iteration: 1/25/22: Product Interface button will now randomize between the valid experts. This should prevent the form from consistently suggesting the same expert. Case JSON object has been added to the code as well as the createCase method from the RESTLET.-->
+<!-- Latest iteration: 1/27/22: Additonal expetises randomized. Added functionality to download JSON to test how this form may modify it before sending to CRM. -->
+<!-- Latest iteration: 1/28/22: Cleared out some misplaced comment syntax. Added expertise randomization to additonal expertise. Expertise without expert now hides escalation button. Email expert feature added to form.--> 
+<!-- MAJOR FEATURE ADDED 1/28/22: Form can now compose and download an email file that contains form information and composes it as an escalation request email. -->
+<!-- Latest iteration: 1/26/22: Crushed some randomExpert functionality bugs. CreateCase function was also debugs and returns the alert again. -->
+<!-- 1/28:Expandable text area to provide additional information added-->
+<!-- 1/30: Continuing implementation of select dropdowns. Easier to configure and collapse. Lots of logic needed to ensure it works right.-->
+<!-- 2/01: Variables from form are populating JSON payload and nlapilogexecution is working.-->
+<!-- 2/05: Ripping out old dropdowns. Paring down form options for better testing. Code reduced from 3117 lines to 2212 lines.-->
+<!-- Escalation message now supported and passes into Outlook email -->
+<!-- Importing CRM Javascript Functions. CRM functionality is not yet implemented. -->
+<!-- <script src="library_case.js"> -->
+
+<!-- <Create case function. Script for RESTLET added 1/25/23. Established JSON file in the program on 1/5.-->
+<!-- Should pull casenumber value into the JSON and append it -->
+
+
+
+<title> GCS Escalation Creation Toolkit </title>
+<html>
+<h2>
+<img src=https://upload.wikimedia.org/wikipedia/commons/6/61/EBSCO_Information_Services_logo.png?20131120155013?h=bcf27952&itok=0h_wUmI-alt="EBSCO LOGO" width="200" height="100">
+<br>
+<b> ESCALATION CREATION TOOLKIT VERSION 0.7 (02/05/2022)</b>
+</h2>
+<meta name="GCSESC" content= "HTML/Javascript Project for LSE Mentorship">
+
+<!-- CSS Style Information for the Form 10/23 Additional Drop Buttons and Buttons were added to the CSS to support enhanced dropdown menu functionality-->
+<!-- Initializing Taxonomy and form buttons/dropdowns-->
+<!-- Each dropdown button needed for the form is initialized here. Each drop button has its own dropdown content.-->
+<style>
+
+b, strong {
+  font-size: 0.8rem;
+  color: #444;
+}
+
+body {
+  background-image: url(https://i.ytimg.com/vi/_dhzHdimfoc/maxresdefault.jpg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+textarea{
+    margin-left: auto;
+    margin-right: auto;
+	max-width: 1300px;
+	min-width: 1000px;
+    text-align: center;
+}
+input{
+	font-size: 0.8rem;
+	color: #444;
+	display: inline-block;
+	margin-bottom: 0.5rem;
+	margin-left: auto;
+	margin-right: auto;
+	background-color: rgb(119, 236, 207);
+	text-align: center;
+}
+option{
+    margin-left: auto;
+    margin-right: auto;
+	font-size: 12px;
+    text-align: center;
+}
+label {
+  font-size: 0.8rem;
+  color: #444;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+select {
+  background-color: #fff;
+  color: #444;
+  font-size: 0.8rem;
+  padding: 0.2rem;
+  border: 1px solid #ddd;
+  border-radius: 0.2rem;
+  appearance: none;
+  display: inline-block;
+  width: auto;
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+select:hover {
+  border-color: #bbb;
+}
+
+select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  outline: none;
+}
+
+button {
+  background-color: #fff;
+  color: #444;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 0.2rem;
+  appearance: none;
+  display: inline-block;
+  width: auto;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: #bbb;
+}
+
+button:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  outline: none;
+}
+
+h1 {
+    margin-left: auto;
+    margin-right: auto;
+	font-size: 10px;
+	border: 5px double ;
+	border-color:black;
+	width:1310px;
+	height:50px;
+	padding:0px;
+	color:black;
+	background-color:#1a8e94;
+    text-align: center;
+    align-items: center;
+}
+
+h2 {
+    margin-left: auto;
+    margin-right: auto;
+	font-size: 16px;
+	width:1310px;
+	border-color:blue;
+	border: 5px double;
+	background-color:#2CC1CA;
+	border-color:rgb(30, 145, 221);
+    text-align: center;
+    padding: 10px;
+}
+
+
+</style>
+
+<head>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>  
+</head>
+<body>
+
+	<h2>
+	<br>
+    <label for="p">DDE Type:</label>
+    <input type="text" id="DDE" name="DDE" readonly>
+    <label for="p">Product:</label>
+    <input type="text" id="PI" name="PI" readonly>
+    <label for="a">Area of Support:</label>
+    <input type="text" id="AOS" name="PI" readonly>
+    <label for="s">Support Task:</label>
+    <input type="text" id="ST" name="PI" readonly>
+	</h2>
+	<br>
+    <h2>
+	<select id="dd1" onclick="updateDDE(this)">
+		<option>Case Type</option>
+		<option id="sst">Support Case</option>
+		<option id="eer">Enhancement Request</option>
+		<option id="sii">Service Issue</option>
+	</select>
+	
+	<select id="dd2" onclick="updateProduct(this)">
+		<option>Product/Interface</option>
+		<option id="abc01">ABC-Clio</option>
+		<option id="ap01">AP Newsroom</option>
+		<option id="ad01">Audiobooks</option>
+		<option id="cn01">CINAHL</option>
+		<option id="cl01">Clever</option>
+		<option id="cr01">Consumer Reports</option>
+		<option id="cs01">Custom Search Box</option>
+		<option id="cu01">Customlinking</option>
+		<option id="dmp01">Dynamed</option>
+		<option id="eb01">eBooks</option>
+		<option id="eh01">EBSCOhost</option>
+		<option id="ed01">EDS</option>
+		<option id="fl01">Flipster</option>
+		<option id="le01">LEX</option>
+		<option id="mh01">MyHeritage</option>
+		<option id="oa01">OpenAthens</option>
+		<option id="rs01">Rosetta Stone</option>
+	</select>
+	
+	
+	<select id="dd3" onclick="updateAOS(this)">
+		<option>Area of Support</option>
+		<option id="lc02">Link Creation/Additon/Update</option>
+		<option id="br02">Branding</option>
+		<option id="eapi02">EDS API</option>
+		<option id="auth02">Authentication</option>
+		<option id="sr02">Searching</option>
+		<option id="mrc02">MARC Records</option>
+		<option id="pf02">Personal Folder</option>
+		<option id="cl02">Customlinking</option>
+		<option id="cldb02">Clever Dashboard</option>
+		<option id="clesc02">Clever Escalation</option>
+		<option id="fmrc02">Flipster MARC</option>
+		<option id="sts02">Statistics</option>
+		<option id="tb02">Troubleshooting</option>
+		<option id="mu02">MARC Updates</option>
+		<option id="rep02">Reporting</option>
+		<option id="ceu02">CEU</option>
+		<option id="myeb02">My EBSCOhost</option>
+		<option id="cat02">Catalog/IR</option>
+		<option id="lex02">LearningExpress Library</option>
+		<option id="jac02">Job & Career Accelerator</option>
+		<option id="wrk02">Workforce Skills</option>
+		<option id="ptp02">PrepStep</option>
+		<option id="admin02">Admin</option>
+	</select>
+	
+	
+	<select id="dd4" onclick="updateST(this)">
+		<option>Support Task</option>
+		<option id="na03">N/A</option>
+		<option id="auth03">Authentication</option>
+		<option id="cl03">Customlinking</option>
+		<option id="tb03">Troubleshooting</option>
+		<option id="fmrc03">Flipster MARC</option>
+		<option id="mrc03">MARC Records</option>
+		<option id="rep03">Reports</option>
+		<option id="ref03">Refund</option>
+		<option id="pl03">Personal Folder</option>
+		<option id="stat03">Provide Statistics</option>
+		<option id="mrcup03">MARC Updates</option>
+		<option id="clsnd03">Send Invitation</option>
+		<option id="stats03">Provide Statistics</option>
+		<option id="usmarc03">US MARC</option>
+		<option id="setup03">Set Up</option>
+		<option id="ff03">Folder Functionality</option>
+		<option id="update03">Update</option>
+		<option id="ip03">IP Addition/Deletion</option>
+		<option id="pc03">Proxy Troubleshooting</option>
+		<option id="cme03">Renewal/CME Profile Activation</option>
+		<option id="tok03">Create/Send Token URL</option>
+		<option id="npa03">Non-Proxied Authentication</option>
+		<option id="prx03">Proxy</option>
+		<option id="cinA03">Admin</option>
+		<option id="cinE03">End User</option>
+		<option id="saml03">Add Custom SAML Resource</option>
+		<option id="sub03">Subscription Issue</option>
+	</select>
+	
+	<select id="dd5" onchange="updateExpert(this)">
+		<option>View Experts</option>
+		<option id="ac">Allison Barclay</option>
+		<option id="ab">Abid Bashir</option>
+		<option id="ae">Anjali Ellendula</option>
+		<option id="ak">Arun Kumar</option>
+		<option id="by">Barry Yadav</option>
+		<option id="cm">Chris Mansi</option>
+		<option id="cg">Codi Gaudreau</option>
+		<option id="dm">Dan Mertens</option>
+		<option id="dh">Donald Hinton</option>
+		<option id="ds">Daniel Stomierosky</option>
+		<option id="dl">David Love</option>
+		<option id="da">Divya Advi</option>
+		<option id="ep">Elvia Persakis</option>
+		<option id="ea">Esmerelda Aguirre</option>
+		<option id="gpt">Glenn Petit</option>
+		<option id="jy">Jenny Yuan</option>
+		<option id="jb">Jill Brennan</option>
+		<option id="jr">Jon Ritterbush</option>
+		<option id="jd">Julianne Driscoll</option>
+		<option id="kt">Katerina Tsoutsouras</option>
+		<option id="le">Lucas Eimert</option>
+		<option id="mw">Morag White</option>
+		<option id="nn">Nattawan Nontiwatwanich</option>
+		<option id="ov">Oscar Ventura</option>
+		<option id="pk">Parker Kotikala</option>
+		<option id="pg">Patrick Gayam</option>
+		<option id="pl">Paul Luciano</option>
+		<option id="rr">Rebekah Reyes</option>
+		<option id="rc">Ryan Cheek</option>
+		<option id="rb">Rory Butler</option>
+		<option id="sk">Sharalyn Krishnan</option>
+		<option id="sth">Sarah Thompson</option>	
+		<option id="stz">Susan Townzen</option>
+	</select>
+	</h2>
+<h2>
+    <label for="e">Recommended Expert:</label>
+    <input type="text" id="escalatedto" name="escalatedto">
+    <label for="cnum" id="casen">Case #:</label>
+    <input type="text" id="casenumber" name="case" value="2653451" maxlength="7">
+
+	<label for="original" id="escalator">Enter your email:</label>
+    <input type="text" id="escalatee" name="escalatee" value="leimert@ebsco.com">
+    <button onclick="create()" class="button900" id="createticket">Create Escalation Ticket</button>
+	<br>
+	<label for="em">Expert Email:</label>
+	<input type="text" id="expertEmail" name="expem">
+	<button onclick="createEmail()" class="button522332">Email Expert</button> 
+</h2>
+<h2>
+<label for="em">What do you need help with?</label>
+<br>
+<textarea id="escalationmessage" rows="3" cols="172"></textarea> <!--describe your issue in further detail-->
+</h2>
+<!--<h2>-->
+<!--Embedding either connect or Status page. Disabled as it is throwing errors in Visual Studio Code-->
+<!--<label for="em">EBSCO Status Page - Current Issues</label>-->
+<!--<iframe src= "https://status.ebsco.com/" title="EBSCOConnect" width="1280px" height="700px"></iframe>-->
+<!--</h2>-->
+
+<br>
+
+<!--Added 10/29/23: more efficient dropdown implementation potentially. considered on 1/29/23. Should be easier to configure options and make this program a bit more efficient.-->
+
+<br>
+</h2>
+
+
+<script>
+//authenicating this HTML application into the Restlet. The intent here is to pass the credentials for the sandbox. 
+$(document).ready(function(){
+//will check if default values are clicked and will clear them. Case # and email of escalatee do this. Default values included to faciliate testing. 
+$("#casenumber").click(function() {
+	$(this).val("");
+});
+
+$("#escalatee").click(function() {
+	$(this).val("");
+});
+var url = "https://392875-sb4.app.netsuite.com/app/site/hosting/restlet.nl";
+var netsuite_data = {
+"access_token": "ed71a40f8f57dabc0f3c1e67cebc0bd7fa3055f1cb0f37ec0ec3107e987e55d3",
+"consumer_key": "a3dc763b6c0902c51cc0f3f371a9b4e053dd1c1db1a28ec2e95038ec1557a4d7",
+"consumer_secret": "d43fc785e230e83e936a5e5dc4ee4f1a8a7f3508bc6949f359532c41b1532f81",
+"token_secret": "455bbca1a2f5483253079d982b0a3039a98f863e5b99bd493e10e47626383a40",
+"app_id": "33C12EF2-7C4D-492D-B7F6-3A579042E810",
+"app_name": "GCS ESCALATION TOOLKIT"
+};
+
+var current_date = new Date();
+current_date = current_date.toISOString();
+
+$.ajax({
+url: url,
+type: "GET",
+headers: {
+"Authorization": "Bearer " + netsuite_data.access_token,
+"Consumer-Key": netsuite_data.consumer_key,
+"Consumer-Secret": netsuite_data.consumer_secret,
+"Token-Secret": netsuite_data.token_secret,
+"X-Netsuite-Application": netsuite_data.app_name,
+"X-Application-Id": netsuite_data.app_id,
+"Content-Type": "application/json",
+"Date": current_date
+},
+success: function(response) {
+console.log("Authentication Succeeded");
+console.log(response);
+},
+error: function(jqXHR, textStatus, errorThrown) {
+console.log("Authentication Failed");
+console.error(textStatus, errorThrown);
+console.log(JSON.stringify(jqXHR));
+
+if (jqXHR.readyState === 0) {
+console.error("Connection error. Please check your network connection.");
+} else if (jqXHR.status === 401) {
+console.error("Unauthorized access. Please check your API credentials.");
+} else if (jqXHR.status === 404) {
+console.error("The requested resource could not be found.");
+} else {
+console.error("An unexpected error occurred. Please try again later.");
+}
+}
+});
+});
+
+</script>
+
+<script>
+var myJSON;
+//hide all experts on form load (new dropdown)
+function hideAllExperts(){
+document.getElementById("ab").style.visibility="hidden";
+document.getElementById("ab").style.fontSize="0px";
+document.getElementById("ac").style.visibility="hidden";
+document.getElementById("ac").style.fontSize="0px";
+document.getElementById("ae").style.visibility="hidden";
+document.getElementById("ae").style.fontSize="0px";
+document.getElementById("ak").style.visibility="hidden";
+document.getElementById("ak").style.fontSize="0px";
+document.getElementById("by").style.visibility="visible";
+document.getElementById("by").style.fontSize="0px";
+document.getElementById("cm").style.visibility="hidden";
+document.getElementById("cm").style.fontSize="0px";
+document.getElementById("cg").style.visibility="hidden";
+document.getElementById("cg").style.fontSize="0px";
+document.getElementById("da").style.visibility="hidden";
+document.getElementById("da").style.fontSize="0px";
+document.getElementById("dh").style.visibility="hidden";
+document.getElementById("dh").style.fontSize="0px";
+document.getElementById("dl").style.visibility="hidden";
+document.getElementById("dl").style.fontSize="0px";
+document.getElementById("dm").style.visibility="hidden";
+document.getElementById("dm").style.fontSize="0px";
+document.getElementById("ds").style.visibility="hidden";
+document.getElementById("ds").style.fontSize="0px";
+document.getElementById("ea").style.visibility="hidden";
+document.getElementById("ea").style.fontSize="0px";
+document.getElementById("ep").style.visibility="hidden";
+document.getElementById("ep").style.fontSize="0px";
+document.getElementById("gpt").style.visibility="hidden";
+document.getElementById("gpt").style.fontSize="0px";
+document.getElementById("jb").style.visibility="hidden";
+document.getElementById("jb").style.fontSize="0px";
+document.getElementById("jd").style.visibility="hidden";
+document.getElementById("jd").style.fontSize="0px";
+document.getElementById("jr").style.visibility="hidden";
+document.getElementById("jr").style.fontSize="0px";
+document.getElementById("jy").style.visibility="hidden";
+document.getElementById("jy").style.fontSize="0px";
+document.getElementById("kt").style.visibility="hidden";
+document.getElementById("kt").style.fontSize="0px";
+document.getElementById("le").style.visibility="hidden";
+document.getElementById("le").style.fontSize="0px";
+document.getElementById("mw").style.visibility="hidden";
+document.getElementById("mw").style.fontSize="0px";
+document.getElementById("nn").style.visibility="hidden";
+document.getElementById("nn").style.fontSize="0px";
+document.getElementById("ov").style.visibility="hidden";
+document.getElementById("ov").style.fontSize="0px";
+document.getElementById("pg").style.visibility="hidden";
+document.getElementById("pg").style.fontSize="0px";
+document.getElementById("pk").style.visibility="hidden";
+document.getElementById("pk").style.fontSize="0px";
+document.getElementById("pl").style.visibility="hidden";
+document.getElementById("pl").style.fontSize="0px";
+document.getElementById("rc").style.visibility="hidden";
+document.getElementById("rc").style.fontSize="0px";
+document.getElementById("rr").style.visibility="hidden";
+document.getElementById("rr").style.fontSize="0px";
+document.getElementById("rb").style.visibility="hidden";
+document.getElementById("rb").style.fontSize="0px";
+document.getElementById("sk").style.visibility="hidden";
+document.getElementById("sk").style.fontSize="0px";
+document.getElementById("sth").style.visibility="hidden";
+document.getElementById("sth").style.fontSize="0px";
+document.getElementById("stz").style.visibility="hidden";
+document.getElementById("stz").style.fontSize="0px";
+}
+
+function hideAllAreas(){
+document.getElementById("br02").style.visibility="hidden";
+document.getElementById("br02").style.fontSize="0px";
+document.getElementById("cldb02").style.visibility="hidden";
+document.getElementById("cldb02").style.fontSize="0px";
+document.getElementById("clesc02").style.visibility="hidden";
+document.getElementById("clesc02").style.fontSize="0px";
+document.getElementById("auth02").style.visibility="hidden";
+document.getElementById("auth02").style.fontSize="0px";
+document.getElementById("sr02").style.visibility="hidden";
+document.getElementById("sr02").style.fontSize="0px";
+document.getElementById("mrc02").style.visibility="hidden";
+document.getElementById("mrc02").style.fontSize="0px";
+document.getElementById("fmrc02").style.visibility="hidden";
+document.getElementById("fmrc02").style.fontSize="0px";
+document.getElementById("sts02").style.visibility="hidden";
+document.getElementById("sts02").style.fontSize="0px";
+document.getElementById("tb02").style.visibility="hidden";
+document.getElementById("tb02").style.fontSize="0px";
+document.getElementById("mu02").style.visibility="hidden";
+document.getElementById("mu02").style.fontSize="0px";
+document.getElementById("rep02").style.visibility="hidden";
+document.getElementById("rep02").style.fontSize="0px";
+document.getElementById("lc02").style.visibility="hidden";
+document.getElementById("lc02").style.fontSize="0px";
+document.getElementById("eapi02").style.visibility="hidden";
+document.getElementById("eapi02").style.fontSize="0px";
+document.getElementById("pf02").style.visibility="hidden";
+document.getElementById("pf02").style.fontSize="0px";
+document.getElementById("cl02").style.visibility="hidden";
+document.getElementById("cl02").style.fontSize="0px";
+document.getElementById("cldb02").style.visibility="hidden";
+document.getElementById("cldb02").style.fontSize="0px";
+document.getElementById("clesc02").style.visibility="hidden";
+document.getElementById("clesc02").style.fontSize="0px";
+document.getElementById("ceu02").style.visibility="hidden";
+document.getElementById("ceu02").style.fontSize="0px";
+document.getElementById("myeb02").style.visibility="hidden";
+document.getElementById("myeb02").style.fontSize="0px";
+document.getElementById("cat02").style.fontSize="0px";
+document.getElementById("cat02").style.fontSize="0px";
+document.getElementById("jac02").style.fontSize="0px";
+document.getElementById("jac02").style.fontSize="0px";
+document.getElementById("ptp02").style.fontSize="0px";
+document.getElementById("ptp02").style.fontSize="0px";
+document.getElementById("lex02").style.fontSize="0px";
+document.getElementById("lex02").style.fontSize="0px";
+document.getElementById("admin02").style.fontSize="0px";
+document.getElementById("admin02").style.fontSize="0px";
+document.getElementById("wrk02").style.fontSize="0px";
+document.getElementById("wrk02").style.fontSize="0px";
+}
+
+function hideAllTasks(){
+document.getElementById("auth03").style.visibility="hidden";
+document.getElementById("auth03").style.fontSize="0px";
+document.getElementById("cl03").style.visibility="hidden";
+document.getElementById("cl03").style.fontSize="0px";
+document.getElementById("tb03").style.visibility="hidden";
+document.getElementById("tb03").style.fontSize="0px";
+document.getElementById("rep03").style.visibility="hidden";
+document.getElementById("rep03").style.fontSize="0px";
+document.getElementById("ref03").style.visibility="hidden";
+document.getElementById("ref03").style.fontSize="0px";
+document.getElementById("pl03").style.visibility="hidden";
+document.getElementById("pl03").style.fontSize="0px";
+document.getElementById("stat03").style.visibility="hidden";
+document.getElementById("stat03").style.fontSize="0px";
+document.getElementById("mrcup03").style.visibility="hidden";
+document.getElementById("mrcup03").style.fontSize="0px";
+document.getElementById("fmrc03").style.visibility="hidden";
+document.getElementById("fmrc03").style.fontSize="0px";
+document.getElementById("mrc03").style.visibility="hidden";
+document.getElementById("mrc03").style.fontSize="0px";
+document.getElementById("stats03").style.visibility="hidden";
+document.getElementById("stats03").style.fontSize="0px";
+document.getElementById("clsnd03").style.visibility="hidden";
+document.getElementById("clsnd03").style.fontSize="0px";
+document.getElementById("usmarc03").style.visibility="hidden";
+document.getElementById("usmarc03").style.fontSize="0px";
+document.getElementById("setup03").style.visibility="hidden";
+document.getElementById("setup03").style.fontSize="0px";
+document.getElementById("ff03").style.visibility="hidden";
+document.getElementById("ff03").style.fontSize="0px";
+document.getElementById("update03").style.visibility="hidden";
+document.getElementById("update03").style.fontSize="0px";
+document.getElementById("ip03").style.visibility="hidden";
+document.getElementById("ip03").style.fontSize="0px";
+document.getElementById("pc03").style.visibility="hidden";
+document.getElementById("pc03").style.fontSize="0px";	
+document.getElementById("na03").style.visibility="hidden";
+document.getElementById("na03").style.fontSize="0px";
+document.getElementById("cme03").style.visibility="hidden";
+document.getElementById("cme03").style.fontSize="0px";
+document.getElementById("tok03").style.visibility="hidden";
+document.getElementById("tok03").style.fontSize="0px";
+document.getElementById("prx03").style.visibility="hidden";
+document.getElementById("prx03").style.fontSize="0px";
+document.getElementById("npa03").style.visibility="hidden";
+document.getElementById("npa03").style.fontSize="0px";
+document.getElementById("cinA03").style.visibility="hidden";
+document.getElementById("cinA03").style.fontSize="0px";
+document.getElementById("cinE03").style.visibility="hidden";
+document.getElementById("cinE03").style.fontSize="0px";
+document.getElementById("ff03").style.visibility="hidden";
+document.getElementById("ff03").style.fontSize="0px";
+document.getElementById("sub03").style.visibility="hidden";
+document.getElementById("sub03").style.fontSize="0px";
+document.getElementById("saml03").style.visibility="hidden";
+document.getElementById("saml03").style.fontSize="0px";
+}
+
+
+function hideallOptions(){
+document.getElementById("ab").style.visibility="hidden";
+document.getElementById("ab").style.fontSize="0px";
+document.getElementById("ac").style.visibility="hidden";
+document.getElementById("ac").style.fontSize="0px";
+document.getElementById("ae").style.visibility="hidden";
+document.getElementById("ae").style.fontSize="0px";
+document.getElementById("ak").style.visibility="hidden";
+document.getElementById("ak").style.fontSize="0px";
+document.getElementById("by").style.visibility="visible";
+document.getElementById("by").style.fontSize="0px";
+document.getElementById("cm").style.visibility="hidden";
+document.getElementById("cm").style.fontSize="0px";
+document.getElementById("cg").style.visibility="hidden";
+document.getElementById("cg").style.fontSize="0px";
+document.getElementById("da").style.visibility="hidden";
+document.getElementById("da").style.fontSize="0px";
+document.getElementById("dh").style.visibility="hidden";
+document.getElementById("dh").style.fontSize="0px";
+document.getElementById("dl").style.visibility="hidden";
+document.getElementById("dl").style.fontSize="0px";
+document.getElementById("dm").style.visibility="hidden";
+document.getElementById("dm").style.fontSize="0px";
+document.getElementById("ds").style.visibility="hidden";
+document.getElementById("ds").style.fontSize="0px";
+document.getElementById("ea").style.visibility="hidden";
+document.getElementById("ea").style.fontSize="0px";
+document.getElementById("ep").style.visibility="hidden";
+document.getElementById("ep").style.fontSize="0px";
+document.getElementById("gpt").style.visibility="hidden";
+document.getElementById("gpt").style.fontSize="0px";
+document.getElementById("jb").style.visibility="hidden";
+document.getElementById("jb").style.fontSize="0px";
+document.getElementById("jd").style.visibility="hidden";
+document.getElementById("jd").style.fontSize="0px";
+document.getElementById("jr").style.visibility="hidden";
+document.getElementById("jr").style.fontSize="0px";
+document.getElementById("jy").style.visibility="hidden";
+document.getElementById("jy").style.fontSize="0px";
+document.getElementById("kt").style.visibility="hidden";
+document.getElementById("kt").style.fontSize="0px";
+document.getElementById("le").style.visibility="hidden";
+document.getElementById("le").style.fontSize="0px";
+document.getElementById("mw").style.visibility="hidden";
+document.getElementById("mw").style.fontSize="0px";
+document.getElementById("nn").style.visibility="hidden";
+document.getElementById("nn").style.fontSize="0px";
+document.getElementById("ov").style.visibility="hidden";
+document.getElementById("ov").style.fontSize="0px";
+document.getElementById("pg").style.visibility="hidden";
+document.getElementById("pg").style.fontSize="0px";
+document.getElementById("pk").style.visibility="hidden";
+document.getElementById("pk").style.fontSize="0px";
+document.getElementById("pl").style.visibility="hidden";
+document.getElementById("pl").style.fontSize="0px";
+document.getElementById("rc").style.visibility="hidden";
+document.getElementById("rc").style.fontSize="0px";
+document.getElementById("rr").style.visibility="hidden";
+document.getElementById("rr").style.fontSize="0px";
+document.getElementById("rb").style.visibility="hidden";
+document.getElementById("rb").style.fontSize="0px";
+document.getElementById("sk").style.visibility="hidden";
+document.getElementById("sk").style.fontSize="0px";
+document.getElementById("sth").style.visibility="hidden";
+document.getElementById("sth").style.fontSize="0px";
+document.getElementById("stz").style.visibility="hidden";
+document.getElementById("stz").style.fontSize="0px";
+
+//Areas of Support
+document.getElementById("br02").style.visibility="hidden";
+document.getElementById("br02").style.fontSize="0px";
+document.getElementById("cldb02").style.visibility="hidden";
+document.getElementById("cldb02").style.fontSize="0px";
+document.getElementById("clesc02").style.visibility="hidden";
+document.getElementById("clesc02").style.fontSize="0px";
+document.getElementById("auth02").style.visibility="hidden";
+document.getElementById("auth02").style.fontSize="0px";
+document.getElementById("sr02").style.visibility="hidden";
+document.getElementById("sr02").style.fontSize="0px";
+document.getElementById("mrc02").style.visibility="hidden";
+document.getElementById("mrc02").style.fontSize="0px";
+document.getElementById("fmrc02").style.visibility="hidden";
+document.getElementById("fmrc02").style.fontSize="0px";
+document.getElementById("sts02").style.visibility="hidden";
+document.getElementById("sts02").style.fontSize="0px";
+document.getElementById("tb02").style.visibility="hidden";
+document.getElementById("tb02").style.fontSize="0px";
+document.getElementById("mu02").style.visibility="hidden";
+document.getElementById("mu02").style.fontSize="0px";
+document.getElementById("rep02").style.visibility="hidden";
+document.getElementById("rep02").style.fontSize="0px";
+document.getElementById("lc02").style.visibility="hidden";
+document.getElementById("lc02").style.fontSize="0px";
+document.getElementById("eapi02").style.visibility="hidden";
+document.getElementById("eapi02").style.fontSize="0px";
+document.getElementById("pf02").style.visibility="hidden";
+document.getElementById("pf02").style.fontSize="0px";
+document.getElementById("cl02").style.visibility="hidden";
+document.getElementById("cl02").style.fontSize="0px";
+document.getElementById("cldb02").style.visibility="hidden";
+document.getElementById("cldb02").style.fontSize="0px";
+document.getElementById("clesc02").style.visibility="hidden";
+document.getElementById("clesc02").style.fontSize="0px";
+document.getElementById("ceu02").style.visibility="hidden";
+document.getElementById("ceu02").style.fontSize="0px";
+document.getElementById("myeb02").style.visibility="hidden";
+document.getElementById("myeb02").style.fontSize="0px";
+document.getElementById("cat02").style.fontSize="0px";
+
+//Support tasks
+document.getElementById("auth03").style.visibility="hidden";
+document.getElementById("auth03").style.fontSize="0px";
+document.getElementById("cl03").style.visibility="hidden";
+document.getElementById("cl03").style.fontSize="0px";
+document.getElementById("tb03").style.visibility="hidden";
+document.getElementById("tb03").style.fontSize="0px";
+document.getElementById("rep03").style.visibility="hidden";
+document.getElementById("rep03").style.fontSize="0px";
+document.getElementById("ref03").style.visibility="hidden";
+document.getElementById("ref03").style.fontSize="0px";
+document.getElementById("pl03").style.visibility="hidden";
+document.getElementById("pl03").style.fontSize="0px";
+document.getElementById("stat03").style.visibility="hidden";
+document.getElementById("stat03").style.fontSize="0px";
+document.getElementById("mrcup03").style.visibility="hidden";
+document.getElementById("mrcup03").style.fontSize="0px";
+document.getElementById("fmrc03").style.visibility="hidden";
+document.getElementById("fmrc03").style.fontSize="0px";
+document.getElementById("mrc03").style.visibility="hidden";
+document.getElementById("mrc03").style.fontSize="0px";
+document.getElementById("stats03").style.visibility="hidden";
+document.getElementById("stats03").style.fontSize="0px";
+document.getElementById("clsnd03").style.visibility="hidden";
+document.getElementById("clsnd03").style.fontSize="0px";
+document.getElementById("usmarc03").style.visibility="hidden";
+document.getElementById("usmarc03").style.fontSize="0px";
+document.getElementById("setup03").style.visibility="hidden";
+document.getElementById("setup03").style.fontSize="0px";
+document.getElementById("ff03").style.visibility="hidden";
+document.getElementById("ff03").style.fontSize="0px";
+document.getElementById("update03").style.visibility="hidden";
+document.getElementById("update03").style.fontSize="0px";
+document.getElementById("ip03").style.visibility="hidden";
+document.getElementById("ip03").style.fontSize="0px";
+document.getElementById("cinE03").style.visibility="hidden";
+document.getElementById("cinE03").style.fontSize="0px";
+document.getElementById("saml03").style.visibility="hidden";
+document.getElementById("saml03").style.fontSize="0px";
+}
+
+//sets variable values from form into JSON file that will be sent to CRM. 
+function setJSON(){
+var escmsg=document.getElementById("escalationmessage").value;
+var casen=document.getElementById("casenumber").value;
+var em=document.getElementById("expertEmail").value;
+var contact=document.getElementById("escalator").value;
+myJSON = '{"case_profile": "Support Case", "case_subject": "Escalated from Case #' + casen + '", "case_incomingmessage": "' + escmsg + '", "case_institution": "ns023381", "case_origin": "Internal", "case_contact": "' + contact + '", "case_email": "' + em + '", "case_priority": "Low", "basicCase": "T"}';
+}
+var CRMresponse; 
+var optionValue;
+const caseentry=document.getElementById("casenumber"); //stores case number to pass it into an .eml file
+const productname=document.getElementById("PI"); //stores product set in form to pass it into an .eml file
+const esclationcontact=document.getElementById("escalatedto"); //stores suggested expert in form to pass it into an .eml file
+const helptask = document.getElementById("escalationmessage"); //stores extra information entered into text area and includes it as body of generated email
+const aos=document.getElementById("AOS"); //stores select Area of Support
+var supporttask=document.getElementById("ST"); //stores selected Area of Support. Modal language when this is set and not set in generated email.
+var addendum="Specifically,"+" ";
+
+hideAllTasks();
+hideAllAreas();
+hideAllExperts();
+settextArea();
+
+function settextArea(){
+	document.getElementById("escalationmessage").value="Default string";
+}
+//I have information from the form populating in a template escalation message. This combines all elements selected in the form along with an escalation message to send. 
+//Enhanced logic to not include support task template language when there is no support task to mention in the message body, and include it when it does. 
+function createEmail() {
+	if ((supporttask.value=="")||(supporttask.value=="N/A")){
+	addendum="";
+	supporttask="";
+	const escalator=document.getElementById("escalatee").value;
+    const title = "Escalated from Case"+" "+caseentry.value;
+    const body = "Hello"+" "+esclationcontact.value+", "+"\n\nI am emailing you regarding"+" "+productname.value+" "+"and requesting assistance with"+" "+aos.value+"."+" "+addendum+" "+supporttask+"\n\n"+helptask.value+"\n";
+	const recipient = document.getElementById("expertEmail").value;
+    const emlContent = new Blob([`data:message/rfc822 eml,\nFrom:${escalator}\nTo:${recipient}\nSubject:${title}\nX-Unsent:1\nContent-Type: text/plain;charset="utf-8"\n\n${body}\n\nThank you in advance for your assistance.\n\n{Internal Signature Here}`]);
+    if (!document.querySelector('#downloadEmail')) {
+        document.body.insertAdjacentHTML('beforeend', '<a id="downloadEmail" download="esclationrequest.eml" style="display: none">Download</a>');
+    }
+    const downloadBtn = document.querySelector('#downloadEmail');
+    downloadBtn.href = URL.createObjectURL(emlContent);
+    downloadBtn.click();
+	}else{
+	addendum="Specifically,"+" ";
+	supporttask=document.getElementById("ST");
+	escalator=document.getElementById("escalatee").value;
+    title = "Escalated from Case"+" "+caseentry.value;
+    body = "Hello"+" "+esclationcontact.value+", "+"\n\nI am emailing you regarding"+" "+productname.value+" "+"and requesting assistance with"+" "+aos.value+"."+" "+addendum+" "+supporttask.value+".\n\n"+helptask.value+"\n";
+	recipient = document.getElementById("expertEmail").value;
+    emlContent = new Blob([`data:message/rfc822 eml,\nFrom:${escalator}\nTo:${recipient}\nSubject:${title}\nX-Unsent:1\nContent-Type: text/plain;charset="utf-8"\n\n${body}\n\nThank you in advance for your assistance.\n\n{Internal Signature Here}`]);
+    if (!document.querySelector('#downloadEmail')) {
+        document.body.insertAdjacentHTML('beforeend', '<a id="downloadEmail" download="esclationrequest.eml" sd3tyle="display: none">Download</a>');
+    }
+    const downloadBtn = document.querySelector('#downloadEmail');
+    downloadBtn.href = URL.createObjectURL(emlContent);
+    downloadBtn.click();	
+	}
+}
+
+function resetContact(){
+	document.getElementById("escalatedto").value="";
+	document.getElementById("expertEmail").value="";
+}
+
+function resetdd2(){
+	var resetthis=document.getElementById("dd3");
+	resetthis.selectedIndex=0;
+	resetContact();	
+}
+
+function resetdd3(){
+	var resetthis2=document.getElementById("dd4");
+	resetthis2.selectedIndex=0;
+	resetContact();
+
+}
+
+function resetdd4(){
+	var resetthis2=document.getElementById("dd5");
+	resetthis2.selectedIndex=0;
+	resetContact();
+}
+
+function na(){
+	var resetthis2=document.getElementById("dd4");
+	resetthis2.selectedIndex=1;
+	document.getElementById("ST").value="N/A";
+}
+
+
+function updateDDE(pi){
+	const selection=pi.value;
+	console.log(selection);
+	document.getElementById("DDE").value=selection;
+	return selection;
+}
+
+function abcClioExperts(){
+	document.getElementById("cm").style.visibility="visible";
+	document.getElementById("cm").style.fontSize="12px";
+	document.getElementById("sk").style.visibility="visible";
+	document.getElementById("sk").style.fontSize="12px";
+	document.getElementById("pl").style.visibility="visible";
+	document.getElementById("pl").style.fontSize="12px";
+	document.getElementById("mw").style.visibility="visible";
+	document.getElementById("mw").style.fontSize="12px";
+	document.getElementById("jr").style.visibility="visible";
+	document.getElementById("jr").style.fontSize="12px";
+	document.getElementById("stz").style.visibility="visible";
+	document.getElementById("stz").style.fontSize="12px";
+}
+function apNewsExperts(){
+	document.getElementById("ac").style.visibility="visible";
+	document.getElementById("ac").style.fontSize="12px";
+	document.getElementById("rr").style.visibility="visible";
+	document.getElementById("rr").style.fontSize="12px";
+}
+function audiobookExperts(){
+	document.getElementById("pk").style.visibility="visible";
+	document.getElementById("pk").style.fontSize="12px";
+	document.getElementById("jb").style.visibility="visible";
+	document.getElementById("jb").style.fontSize="12px";
+	document.getElementById("ac").style.visibility="visible";
+	document.getElementById("ac").style.fontSize="12px";
+}
+
+function edsapiExperts(){
+	document.getElementById("cm").style.visibility="visible";
+	document.getElementById("cm").style.fontSize="12px";
+	document.getElementById("pl").style.visibility="visible";
+	document.getElementById("pl").style.fontSize="12px";
+	document.getElementById("ep").style.visibility="visible";
+	document.getElementById("ep").style.fontSize="12px";
+}
+
+function myHeritageExperts(){
+	document.getElementById("jb").style.visibility="visible";
+	document.getElementById("jb").style.fontSize="12px";
+	document.getElementById("cg").style.visibility="visible";
+	document.getElementById("cg").style.fontSize="12px";
+
+}
+
+function flipsterMARCExperts(){
+	document.getElementById("kt").style.visibility="visible";
+	document.getElementById("kt").style.fontSize="12px";
+	document.getElementById("jd").style.visibility="visible";
+	document.getElementById("jd").style.fontSize="12px";
+}
+
+function catalogExperts(){
+	document.getElementById("ab").style.visibility="visible";
+	document.getElementById("ab").style.fontSize="12px";
+	document.getElementById("ak").style.visibility="visible";
+	document.getElementById("ak").style.fontSize="12px";
+	document.getElementById("by").style.visibility="visible";
+	document.getElementById("by").style.fontSize="12px";
+	document.getElementById("cm").style.visibility="visible";
+	document.getElementById("cm").style.fontSize="12px";
+	document.getElementById("ep").style.visibility="visible";
+	document.getElementById("ep").style.fontSize="12px";
+	document.getElementById("le").style.visibility="visible";
+	document.getElementById("le").style.fontSize="12px";
+	document.getElementById("pg").style.visibility="visible";
+	document.getElementById("pg").style.fontSize="12px";
+}
+
+function edsExperts(){
+	document.getElementById("ak").style.visibility="visible";
+	document.getElementById("ak").style.fontSize="12px";
+	document.getElementById("pg").style.visibility="visible";
+	document.getElementById("pg").style.fontSize="12px";
+	document.getElementById("by").style.visibility="visible";
+	document.getElementById("by").style.fontSize="12px";
+	document.getElementById("cm").style.visibility="visible";
+	document.getElementById("cm").style.fontSize="12px";
+	document.getElementById("ab").style.visibility="visible";
+	document.getElementById("ab").style.fontSize="12px";
+	document.getElementById("ep").style.visibility="visible";
+	document.getElementById("ep").style.fontSize="12px";
+}
+
+function eBookExperts(){
+	document.getElementById("kt").style.visibility="visible";
+	document.getElementById("kt").style.fontSize="12px";
+	document.getElementById("dl").style.visibility="visible";
+	document.getElementById("dl").style.fontSize="12px";
+	document.getElementById("rc").style.visibility="visible";
+	document.getElementById("rc").style.fontSize="12px";
+	document.getElementById("pk").style.visibility="visible";
+	document.getElementById("pk").style.fontSize="12px";
+	document.getElementById("jb").style.visibility="visible";
+	document.getElementById("jb").style.fontSize="12px";
+}
+
+function cleverExperts(){
+	document.getElementById("rc").style.visibility="visible";
+	document.getElementById("rc").style.fontSize="12px";
+	document.getElementById("gpt").style.visibility="visible";
+	document.getElementById("gpt").style.fontSize="12px";
+	document.getElementById("rb").style.visibility="visible";
+	document.getElementById("rb").style.fontSize="12px";
+	document.getElementById("pl").style.visibility="visible";
+	document.getElementById("pl").style.fontSize="12px";
+}
+function consumerReportsExperts(){
+	document.getElementById("jb").style.visibility="visible";
+	document.getElementById("jb").style.fontSize="12px";
+	document.getElementById("ov").style.visibility="visible";
+	document.getElementById("ov").style.fontSize="12px";
+	document.getElementById("dh").style.visibility="visible";
+	document.getElementById("dh").style.fontSize="12px";
+}
+
+function customSearchBoxExperts(){
+	document.getElementById("pg").style.visibility="visible";
+	document.getElementById("pg").style.fontSize="12px";
+	document.getElementById("cm").style.visibility="visible";
+	document.getElementById("cm").style.fontSize="12px";
+	document.getElementById("pl").style.visibility="visible";
+	document.getElementById("pl").style.fontSize="12px";
+	document.getElementById("ep").style.visibility="visible";
+	document.getElementById("ep").style.fontSize="12px";
+	document.getElementById("ds").style.visibility="visible";
+	document.getElementById("ds").style.fontSize="12px";
+	document.getElementById("ak").style.visibility="visible";
+	document.getElementById("ak").style.fontSize="12px";
+	document.getElementById("ds").style.visibility="visible";
+	document.getElementById("ds").style.fontSize="12px";
+	document.getElementById("ep").style.visibility="visible";
+	document.getElementById("ep").style.fontSize="12px";
+}
+
+function dynamedExperts(){
+	document.getElementById("ae").style.visibility="visible";
+	document.getElementById("ae").style.fontSize="12px";
+	document.getElementById("jb").style.visibility="visible";
+	document.getElementById("jb").style.fontSize="12px";
+	document.getElementById("kt").style.visibility="visible";
+	document.getElementById("kt").style.fontSize="12px";
+	document.getElementById("mw").style.visibility="visible";
+	document.getElementById("mw").style.fontSize="12px";
+	document.getElementById("ds").style.visibility="visible";
+	document.getElementById("ds").style.fontSize="12px";
+
+}
+
+function cinahlExperts(){
+	document.getElementById("jb").style.visibility="visible";
+	document.getElementById("jb").style.fontSize="12px";
+	document.getElementById("kt").style.visibility="visible";
+	document.getElementById("kt").style.fontSize="12px";
+	document.getElementById("mw").style.visibility="visible";
+	document.getElementById("mw").style.fontSize="12px";
+	document.getElementById("ae").style.visibility="visible";
+	document.getElementById("ae").style.fontSize="12px";
+}
+
+function customLinkingExperts(){
+	document.getElementById("cm").style.visibility="visible";
+	document.getElementById("cm").style.fontSize="12px";
+	document.getElementById("le").style.visibility="visible";
+	document.getElementById("le").style.fontSize="12px";
+	document.getElementById("ep").style.visibility="visible";
+	document.getElementById("ep").style.fontSize="12px";
+}
+
+function lexExperts(){
+	document.getElementById("pl").style.visibility="visible";
+	document.getElementById("pl").style.fontSize="12px";
+	document.getElementById("da").style.visibility="visible";
+	document.getElementById("da").style.fontSize="12px";
+	document.getElementById("le").style.visibility="visible";
+	document.getElementById("le").style.fontSize="12px";
+	document.getElementById("jb").style.visibility="visible";
+	document.getElementById("jb").style.fontSize="12px";
+	document.getElementById("sth").style.visibility="visible";
+	document.getElementById("sth").style.fontSize="12px";
+	document.getElementById("mw").style.visibility="visible";
+	document.getElementById("mw").style.fontSize="12px";
+}
+
+function openAthensExperts(){
+	document.getElementById("jd").style.visibility="visible";
+	document.getElementById("jd").style.fontSize="12px";
+	document.getElementById("dm").style.visibility="visible";
+	document.getElementById("dm").style.fontSize="12px";
+	document.getElementById("dl").style.visibility="visible";
+	document.getElementById("dl").style.fontSize="12px";
+	document.getElementById("rc").style.visibility="visible";
+	document.getElementById("rc").style.fontSize="12px";
+	document.getElementById("cm").style.visibility="visible";
+	document.getElementById("cm").style.fontSize="12px";
+	document.getElementById("pl").style.visibility="visible";
+	document.getElementById("pl").style.fontSize="12px";
+	document.getElementById("ds").style.visibility="visible";
+	document.getElementById("ds").style.fontSize="12px";
+	document.getElementById("ac").style.visibility="visible";
+	document.getElementById("ac").style.fontSize="12px";
+	document.getElementById("rb").style.visibility="visible";
+	document.getElementById("rb").style.fontSize="12px";
+	document.getElementById("ep").style.visibility="visible";
+	document.getElementById("ep").style.fontSize="12px";
+}
+
+function ehostExperts(){
+	document.getElementById("ab").style.visibility="visible";
+	document.getElementById("ab").style.fontSize="12px";
+	document.getElementById("pg").style.visibility="visible";
+	document.getElementById("pg").style.fontSize="12px";
+	document.getElementById("ak").style.visibility="visible";
+	document.getElementById("ak").style.fontSize="12px";
+}
+
+function rosettaStoneExperts(){
+	document.getElementById("pl").style.visibility="visible";
+	document.getElementById("pl").style.fontSize="12px";
+}
+
+function marcExperts(){
+	document.getElementById("jr").style.visibility="visible";
+	document.getElementById("jr").style.fontSize="12px";
+	document.getElementById("le").style.visibility="visible";
+	document.getElementById("le").style.fontSize="12px";
+	document.getElementById("pl").style.visibility="visible";
+	document.getElementById("pl").style.fontSize="12px";
+}
+
+function brandingExperts(){
+	document.getElementById("ak").style.visibility="visible";
+	document.getElementById("ak").style.fontSize="12px";
+	document.getElementById("pg").style.visibility="visible";
+	document.getElementById("pg").style.fontSize="12px";
+	document.getElementById("ab").style.visibility="visible";
+	document.getElementById("ab").style.fontSize="12px";
+	document.getElementById("ep").style.visibility="visible";
+	document.getElementById("ep").style.fontSize="12px";
+	document.getElementById("cm").style.visibility="visible";
+	document.getElementById("cm").style.fontSize="12px";
+	document.getElementById("by").style.visibility="visible";
+	document.getElementById("by").style.fontSize="12px";
+}
+
+function flipsterExperts(){
+	document.getElementById("rc").style.visibility="visible";
+	document.getElementById("rc").style.fontSize="12px";
+	document.getElementById("pk").style.visibility="visible";
+	document.getElementById("pk").style.fontSize="12px";
+	document.getElementById("kt").style.visibility="visible";
+	document.getElementById("kt").style.fontSize="12px";
+	document.getElementById("jd").style.visibility="visible";
+	document.getElementById("jd").style.fontSize="12px";
+}
+
+//New function that will update the product name and check the selection to display experts
+function updateProduct(pi){
+const selection=pi.value;
+	if(selection=="ABC-Clio"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		abcClioExperts();
+		document.getElementById("auth02").style.visibility="visible";
+		document.getElementById("auth02").style.fontSize="12px";
+		document.getElementById("rep02").style.visibility="visible";
+		document.getElementById("rep02").style.fontSize="12px";
+		document.getElementById("ST").value="N/A";
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		resetdd4();
+		return selection;
+	}if(selection=="AP Newsroom"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		apNewsExperts();
+		document.getElementById("auth02").style.visibility="visible";
+		document.getElementById("auth02").style.fontSize="12px";
+		document.getElementById("rep02").style.visibility="visible";
+		document.getElementById("rep02").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		resetdd4();
+		return selection;
+	}else if(selection=="eBooks"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		eBookExperts();
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		resetdd4();
+		document.getElementById("rep02").style.visibility="visible";
+		document.getElementById("rep02").style.fontSize="12px";
+		return selection;
+	}else if(selection=="MyHeritage"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		myHeritageExperts();
+		document.getElementById("cg").style.visibility="visible";
+		document.getElementById("cg").style.fontSize="12px";
+		document.getElementById("jb").style.visibility="visible";
+		document.getElementById("jb").style.fontSize="12px";
+
+		document.getElementById("auth02").style.visibility="visible";
+		document.getElementById("auth02").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		resetdd4();
+		return selection;
+	}else if(selection=="Audiobooks"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		audiobookExperts();
+		document.getElementById("auth02").style.visibility="visible";
+		document.getElementById("auth02").style.fontSize="12px";
+		document.getElementById("mrc02").style.visibility="visible";
+		document.getElementById("mrc02").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		resetdd4();
+		return selection;
+	}else if(selection=="Clever"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		cleverExperts();
+		document.getElementById("cldb02").style.visibility="visible";
+		document.getElementById("cldb02").style.fontSize="12px";
+		document.getElementById("clesc02").style.visibility="visible";
+		document.getElementById("clesc02").style.fontSize="12px";
+
+		document.getElementById("clsnd03").style.visibility="visible";
+		document.getElementById("clsnd03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		return selection;
+	}else if(selection=="Consumer Reports"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		consumerReportsExperts();
+		document.getElementById("auth02").style.visibility="visible";
+		document.getElementById("auth02").style.fontSize="12px";
+		document.getElementById("rep02").style.visibility="visible";
+		document.getElementById("rep02").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		return selection;
+	}else if(selection=="Custom Search Box"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		customSearchBoxExperts();
+		document.getElementById("tb02").style.visibility="visible";
+		document.getElementById("tb02").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		var resetthis=document.getElementById("dd3");
+		resetdd2();
+		resetdd3();
+		return selection;
+	}else if(selection=="Dynamed"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		dynamedExperts();
+		document.getElementById("auth02").style.visibility="visible";
+		document.getElementById("auth02").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		return selection;
+	}else if(selection=="CINAHL"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		cinahlExperts();
+		document.getElementById("ceu02").style.visibility="visible";
+		document.getElementById("ceu02").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		return selection;
+	}else if(selection=="OpenAthens"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		openAthensExperts();
+		document.getElementById("admin02").style.visibility="visible";
+		document.getElementById("admin02").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		return selection;
+	}else if(selection=="Rosetta Stone"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		document.getElementById("auth02").style.visibility="visible";
+		document.getElementById("auth02").style.fontSize="12px";
+		document.getElementById("rep02").style.visibility="visible";
+		document.getElementById("rep02").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		return selection;
+	}else if(selection=="Customlinking"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		customLinkingExperts();
+		document.getElementById("auth02").style.visibility="visible";
+		document.getElementById("auth02").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		return selection;
+	}else if(selection=="EBSCOhost"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		ehostExperts();
+		document.getElementById("myeb02").style.visibility="visible";
+		document.getElementById("myeb02").style.fontSize="12px";
+		document.getElementById("mrc02").style.visibility="visible";
+		document.getElementById("mrc02").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		return selection;
+	}else if(selection=="EDS"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		edsExperts();
+		document.getElementById("cat02").style.visibility="visible";
+		document.getElementById("cat02").style.fontSize="12px";
+		document.getElementById("mrc02").style.visibility="visible";
+		document.getElementById("mrc02").style.fontSize="12px";
+		document.getElementById("eapi02").style.visibility="visible";
+		document.getElementById("eapi02").style.fontSize="12px";;
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		return selection;
+	}else if(selection=="LEX"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		lexExperts();
+		document.getElementById("lex02").style.visibility="visible";
+		document.getElementById("lex02").style.fontSize="12px";
+		document.getElementById("jac02").style.visibility="visible";
+		document.getElementById("jac02").style.fontSize="12px";
+		document.getElementById("ptp02").style.visibility="visible";
+		document.getElementById("ptp02").style.fontSize="12px";
+		document.getElementById("wrk02").style.visibility="visible";
+		document.getElementById("wrk02").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		return selection;
+	}else if(selection=="Flipster"){
+		hideAllAreas();
+		hideAllExperts();
+		hideAllTasks();
+		flipsterExperts();
+		document.getElementById("mrc02").style.visibility="visible";
+		document.getElementById("mrc02").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		resetdd2();
+		resetdd3();
+		return selection;
+	}else{
+		hideallOptions();
+		console.log(selection);
+		document.getElementById("PI").value=selection;
+		document.getElementById("dd3").value="N/A";
+		return selection;
+	}
+	
+}
+
+function updateAOS(pi){
+	const product=document.getElementById("PI").value;
+	const selection=pi.value;
+	console.log(selection);
+	if((selection=="Branding")&&(product==("EDS"))){
+		hideAllExperts();
+		hideAllTasks();
+		brandingExperts();
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		resetdd3();
+		return selection;
+	}else if(selection=="My EBSCOhost"){
+		hideAllExperts();
+		hideAllTasks();
+		document.getElementById("pl").style.visibility="visible";
+		document.getElementById("pl").style.fontSize="12px";
+		document.getElementById("cm").style.visibility="visible";
+		document.getElementById("cm").style.fontSize="12px";
+		document.getElementById("ep").style.visibility="visible";
+		document.getElementById("ep").style.fontSize="12px";
+		document.getElementById("ff03").style.visibility="visible";
+		document.getElementById("ff03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		resetdd3();
+		return selection;
+	}else if((selection=="Catalog/IR")&&(product=="EDS")){
+		hideAllExperts();
+		hideAllTasks();
+		catalogExperts();
+		document.getElementById("update03").style.visibility="visible";
+		document.getElementById("update03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		resetdd3();
+		return selection;
+	}else if((selection=="Authentication")&&(product=="ABC-Clio")){
+		hideAllExperts();
+		hideAllTasks();
+		abcClioExperts();
+		document.getElementById("ip03").style.visibility="visible";
+		document.getElementById("ip03").style.fontSize="12px";
+		document.getElementById("pc03").style.visibility="visible";
+		document.getElementById("pc03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		resetdd3();
+		return selection;
+	}else if((selection=="CEU")&&(product=="CINAHL")){
+		console.log(selection);
+		hideAllExperts();
+		hideAllTasks();
+		cinahlExperts();
+		document.getElementById("cinA03").style.visibility="visible";
+		document.getElementById("cinA03").style.fontSize="12px";
+		document.getElementById("cinE03").style.visibility="visible";
+		document.getElementById("cinE03").style.fontSize="12px";
+		document.getElementById("stats03").style.visibility="visible";
+		document.getElementById("stats03").style.fontSize="12px";
+		document.getElementById("AOS").value=selection;
+		resetdd3();
+		return selection;
+	}else if((selection=="Authentication")&&(product=="AP Newsroom")){
+		hideAllExperts();
+		hideAllTasks();
+		document.getElementById("ac").style.visibility="visible";
+		document.getElementById("ac").style.fontSize="12px";
+		document.getElementById("rr").style.visibility="visible";
+		document.getElementById("rr").style.fontSize="12px";
+		document.getElementById("ip03").style.visibility="visible";
+		document.getElementById("ip03").style.fontSize="12px";
+		document.getElementById("pc03").style.visibility="visible";
+		document.getElementById("pc03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		resetdd3();
+		return selection;
+	}else if((selection=="Authentication")&&(product=="Audiobooks")){
+		hideAllExperts();
+		hideAllTasks();
+		audiobookExperts();
+		document.getElementById("ip03").style.visibility="visible";
+		document.getElementById("ip03").style.fontSize="12px";
+		document.getElementById("pc03").style.visibility="visible";
+		document.getElementById("pc03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		na();
+		return selection;
+	}else if((selection=="Authentication")&&(product=="Customlinking")){
+		hideAllExperts();
+		hideAllTasks();
+		customLinkingExperts();
+		document.getElementById("npa03").style.visibility="visible";
+		document.getElementById("npa03").style.fontSize="12px";
+		document.getElementById("prx03").style.visibility="visible";
+		document.getElementById("prx03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		return selection;
+	}else if((selection=="MARC Records")&&(product=="Audiobooks")){
+		hideAllExperts();
+		hideAllTasks();
+		audiobookExperts();
+		document.getElementById("ip03").style.visibility="visible";
+		document.getElementById("ip03").style.fontSize="12px";
+		document.getElementById("pc03").style.visibility="visible";
+		document.getElementById("pc03").style.fontSize="12px";
+		document.getElementById("npa03").style.visibility="visible";
+		document.getElementById("npa03").style.fontSize="12px";
+		document.getElementById("npa03").style.visibility="visible";
+		document.getElementById("npa03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		na();
+		return selection;	
+	}else if((selection=="MARC Records")&&(product=="Flipster")){
+		hideAllExperts();
+		hideAllTasks();
+		flipsterMARCExperts();
+		na();
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		return selection;	
+	}else if((selection=="Authentication")&&(product=="Consumer Reports")){
+		hideAllExperts();
+		hideAllTasks();
+		consumerReportsExperts();
+		document.getElementById("ip03").style.visibility="visible";
+		document.getElementById("ip03").style.fontSize="12px";
+		document.getElementById("pc03").style.visibility="visible";
+		document.getElementById("pc03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		na();
+		return selection;
+	}else if((selection=="LearningExpress Library")&&(product=="LEX")){
+		hideAllExperts();
+		hideAllTasks();
+		lexExperts();
+		document.getElementById("auth03").style.visibility="visible";
+		document.getElementById("auth03").style.fontSize="12px";
+		document.getElementById("rep03").style.visibility="visible";
+		document.getElementById("rep03").style.fontSize="12px";
+		document.getElementById("stat03").style.visibility="visible";
+		document.getElementById("stat03").style.fontSize="12px";
+		document.getElementById("setup03").style.visibility="visible";
+		document.getElementById("setup03").style.fontSize="12px";
+		document.getElementById("mrc03").style.visibility="visible";
+		document.getElementById("mrc03").style.fontSize="12px";
+		document.getElementById("sub03").style.visibility="visible";
+		document.getElementById("sub03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		return selection;
+	}else if((selection=="Job & Career Accelerator")&&(product=="LEX")){
+		hideAllExperts();
+		hideAllTasks();
+		lexExperts();
+		document.getElementById("auth03").style.visibility="visible";
+		document.getElementById("auth03").style.fontSize="12px";
+		document.getElementById("rep03").style.visibility="visible";
+		document.getElementById("rep03").style.fontSize="12px";
+		document.getElementById("stat03").style.visibility="visible";
+		document.getElementById("stat03").style.fontSize="12px";
+		document.getElementById("setup03").style.visibility="visible";
+		document.getElementById("setup03").style.fontSize="12px";
+		document.getElementById("mrc03").style.visibility="visible";
+		document.getElementById("mrc03").style.fontSize="12px";
+		document.getElementById("sub03").style.visibility="visible";
+		document.getElementById("sub03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		return selection;
+	}else if((selection=="PrepSTEP")&&(product=="LEX")){
+		hideAllExperts();
+		hideAllTasks();
+		lexExperts();
+		document.getElementById("auth03").style.visibility="visible";
+		document.getElementById("auth03").style.fontSize="12px";
+		document.getElementById("rep03").style.visibility="visible";
+		document.getElementById("rep03").style.fontSize="12px";
+		document.getElementById("stat03").style.visibility="visible";
+		document.getElementById("stat03").style.fontSize="12px";
+		document.getElementById("setup03").style.visibility="visible";
+		document.getElementById("setup03").style.fontSize="12px";
+		document.getElementById("mrc03").style.visibility="visible";
+		document.getElementById("mrc03").style.fontSize="12px";
+		document.getElementById("sub03").style.visibility="visible";
+		document.getElementById("sub03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		return selection;
+	}else if((selection=="Workforce Skills")&&(product=="LEX")){
+		hideAllExperts();
+		hideAllTasks();
+		lexExperts();
+		document.getElementById("auth03").style.visibility="visible";
+		document.getElementById("auth03").style.fontSize="12px";
+		document.getElementById("rep03").style.visibility="visible";
+		document.getElementById("rep03").style.fontSize="12px";
+		document.getElementById("stat03").style.visibility="visible";
+		document.getElementById("stat03").style.fontSize="12px";
+		document.getElementById("setup03").style.visibility="visible";
+		document.getElementById("setup03").style.fontSize="12px";
+		document.getElementById("mrc03").style.visibility="visible";
+		document.getElementById("mrc03").style.fontSize="12px";
+		document.getElementById("sub03").style.visibility="visible";
+		document.getElementById("sub03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		return selection;
+	}else if((selection=="Reporting")&&(product=="eBooks")){
+		hideAllExperts();
+		hideAllTasks();
+		eBookExperts();
+		document.getElementById("AOS").value=selection;
+		na();
+		return selection;
+	}else if((selection=="Troubleshooting")&&(product=="Custom Search Box")){
+		hideAllExperts();
+		hideAllTasks();
+		document.getElementById("ak").style.visibility="visible";
+		document.getElementById("ak").style.fontSize="12px";
+		document.getElementById("pg").style.visibility="visible";
+		document.getElementById("pg").style.fontSize="12px";
+		document.getElementById("cm").style.visibility="visible";
+		document.getElementById("cm").style.fontSize="12px";
+		document.getElementById("ds").style.visibility="visible";
+		document.getElementById("ds").style.fontSize="12px";
+		document.getElementById("pl").style.visibility="visible";
+		document.getElementById("pl").style.fontSize="12px";
+		document.getElementById("ep").style.visibility="visible";
+		document.getElementById("ep").style.fontSize="12px";
+		na(); //set ST to N/A
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		
+		return selection;
+	}else if((selection=="Authentication")&&(product=="MyHeritage")){
+		hideAllExperts();
+		hideAllTasks();
+		document.getElementById("jb").style.visibility="visible";
+		document.getElementById("jb").style.fontSize="12px";
+		document.getElementById("cg").style.visibility="visible";
+		document.getElementById("cg").style.fontSize="12px";
+
+		document.getElementById("ip03").style.visibility="visible";
+		document.getElementById("ip03").style.fontSize="12px";
+		document.getElementById("prx03").style.visibility="visible";
+		document.getElementById("prx03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		
+		return selection;
+	}else if((selection=="Authentication")&&(product=="Dynamed")){
+		hideAllExperts();
+		hideAllTasks();
+		document.getElementById("ak").style.visibility="visible";
+		document.getElementById("ak").style.fontSize="12px";
+		document.getElementById("jb").style.visibility="visible";
+		document.getElementById("jb").style.fontSize="12px";
+		document.getElementById("kt").style.visibility="visible";
+		document.getElementById("kt").style.fontSize="12px";
+		document.getElementById("mw").style.visibility="visible";
+		document.getElementById("mw").style.fontSize="12px";
+		document.getElementById("ep").style.visibility="visible";
+		document.getElementById("ep").style.fontSize="12px";
+
+		document.getElementById("tok03").style.visibility="visible";
+		document.getElementById("tok03").style.fontSize="12px";
+		document.getElementById("cme03").style.visibility="visible";
+		document.getElementById("cme03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		
+		return selection;
+	}else if((selection=="Admin")&&(product=="OpenAthens")){
+		hideAllExperts();
+		hideAllTasks();
+		openAthensExperts();
+		document.getElementById("saml03").style.visibility="visible";
+		document.getElementById("saml03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;	
+		return selection;
+	}else if((selection=="Authentication")&&(product=="Rosetta Stone")){
+		hideAllExperts();
+		hideAllTasks();
+		rosettaStoneExperts();
+		na();
+		console.log(selection);
+		document.getElementById("AOS").value=selection;	
+		return selection;
+	}else if((selection=="Reporting")&&(product=="Rosetta Stone")){
+		hideAllExperts();
+		hideAllTasks();
+		rosettaStoneExperts();
+		na();
+		console.log(selection);
+		document.getElementById("AOS").value=selection;	
+		return selection;
+	}else if((selection=="EDS API")&&(product=="EDS")){
+		hideAllExperts();
+		hideAllTasks();
+		edsapiExperts();
+		na();
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		return selection;	
+	}else if((selection=="Clever Escalation")&&(product=="Clever")){
+		hideAllExperts();
+		hideAllTasks();
+		cleverExperts();
+		na();
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		return selection;	
+	}else if((selection=="Clever Dashboard")&&(product=="Clever")){
+		hideAllExperts();
+		hideAllTasks();
+		cleverExperts();
+		document.getElementById("clsnd03").style.visibility="visible";
+		document.getElementById("clsnd03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		resetdd3();
+		return selection;	
+	}else if((selection=="Reporting")&&(product=="Consumer Reports")){
+		hideAllExperts();
+		hideAllTasks();
+		consumerReportsExperts();
+		document.getElementById("stat03").style.visibility="visible";
+		document.getElementById("stat03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("AOS").value=selection;
+		resetdd3();
+		return selection;	
+	}else{
+	document.getElementById("AOS").value=selection;
+	return selection;
+	}
+}
+
+
+
+function updateST(pi){
+	const product=document.getElementById("PI").value;
+	const area=document.getElementById("AOS").value;
+	const selection=pi.value;
+	console.log(selection);
+	if(selection=="N/A"){
+		alert("No support tasks to select");
+	}else if((selection=="Update")&&(area=="Catalog/IR")){
+		hideAllExperts();
+		catalogExperts();
+		document.getElementById("update03").style.visibility="visible";
+		document.getElementById("update03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("ST").value=selection;
+		return selection;
+	}else if((selection=="IP Addition/Deletion")&&(product=="AP Newsroom")){
+		hideAllExperts();
+		hideAllTasks();
+		apNewsExperts();
+		document.getElementById("ip03").style.visibility="visible";
+		document.getElementById("ip03").style.fontSize="12px";
+		document.getElementById("pc03").style.visibility="visible";
+		document.getElementById("pc03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("ST").value=selection;
+		return selection;
+	}else if((selection=="IP Addition/Deletion")&&(product=="ABC-Clio")){
+		hideAllExperts();
+		hideAllTasks();
+		abcClioExperts();
+		document.getElementById("ip03").style.visibility="visible";
+		document.getElementById("ip03").style.fontSize="12px";
+		document.getElementById("pc03").style.visibility="visible";
+		document.getElementById("pc03").style.fontSize="12px";
+		console.log(selection);
+		document.getElementById("ST").value=selection;
+		return selection;
+	}else if((selection=="Folder Functionality")&&(product=="EBSCOhost")){
+		hideAllExperts();
+		hideAllTasks();
+		console.log(selection);
+		document.getElementById("ST").value=selection;
+		return selection;
+	}else{
+	document.getElementById("ST").value=selection;
+	return selection;
+	}
+}
+
+function updateExpert(pi){
+	const selection=pi.value;
+	console.log(selection);
+	document.getElementById("escalatedto").value=selection;
+	loadExpertEmail();
+	return selection;
+}
+
+function loadExpertEmail(){
+var expert=document.getElementById("escalatedto").value;
+		if(expert=="Allison Barclay"){
+			document.getElementById("expertEmail").value="abarclay@ebsco.com";
+		}else if(expert=="Abid Bashir"){
+			document.getElementById("expertEmail").value="abashir@ebsco.com";
+		}else if(expert=="Anjali Ellendula"){
+			document.getElementById("expertEmail").value="aellendula@ebsco.com";
+		}else if(expert=="Arun Kumar"){
+			document.getElementById("expertEmail").value="akumar@ebsco.com";
+		}else if(expert=="Barry Yadav"){
+			document.getElementById("expertEmail").value="byadav@ebsco.com";
+		}else if(expert=="Chris Mansi"){
+			document.getElementById("expertEmail").value="cmansi@ebsco.com";
+		}else if(expert=="Codi Gaudreau"){
+			document.getElementById("expertEmail").value="cgaudreau@ebsco.com";
+		}else if(expert=="Dan Mertens"){
+			document.getElementById("expertEmail").value="dmertens@ebsco.com";
+		}else if(expert=="Donald Hinton"){
+			document.getElementById("expertEmail").value="dhinton@ebsco.com";
+		}else if(expert=="Daniel Stomierosky"){
+			document.getElementById("expertEmail").value="dstomierosky@ebsco.com";
+		}else if(expert=="David Love"){
+			document.getElementById("expertEmail").value="dlove@ebsco.com";
+		}else if(expert=="Divya Advi"){
+			document.getElementById("expertEmail").value="dadvi@ebsco.com";
+		}else if(expert=="Elvia Persakis"){
+			document.getElementById("expertEmail").value="epersakis@ebsco.com";
+		}else if(expert=="Esmerelda Aguirre"){
+			document.getElementById("expertEmail").value="eaguirre@ebsco.com";
+		}else if(expert=="Jenny Yuan"){
+			document.getElementById("expertEmail").value="jyuan@ebsco.com";
+		}else if(expert=="Jill Brennan"){
+			document.getElementById("expertEmail").value="jbrennan@ebsco.com";
+		}else if(expert=="Jon Ritterbush"){
+			document.getElementById("expertEmail").value="jritterbush@ebsco.com";
+		}else if(expert=="Katerina Tsoutsouras"){
+			document.getElementById("expertEmail").value="ktsoutsouras@ebsco.com";
+		}else if(expert=="Lucas Eimert"){
+			document.getElementById("expertEmail").value="leimert@ebsco.com";
+		}else if(expert=="Morag White"){
+			document.getElementById("expertEmail").value="mwhite@ebsco.com";
+		}else if(expert=="Nattwan Nontiwatwanich"){
+			document.getElementById("expertEmail").value="nnontiwatwanich@ebsco.com";
+		}else if(expert=="Oscar Ventura"){
+			document.getElementById("expertEmail").value="oventura@ebsco.com";
+		}else if(expert=="Parker Kotikala"){
+			document.getElementById("expertEmail").value="pkotikala@ebsco.com";
+		}else if(expert=="Patrick Gayam"){
+			document.getElementById("expertEmail").value="pgayam@ebsco.com";
+		}else if(expert=="Paul Luciano"){
+			document.getElementById("expertEmail").value="pluciano@ebsco.com";
+		}else if(expert=="Rebekah Reyes"){
+			document.getElementById("expertEmail").value="rreyes@ebsco.com";
+		}else if(expert=="Ryan Cheek"){
+			document.getElementById("expertEmail").value="rcheek@ebsco.com";
+		}else if(expert=="Rory Butler"){
+			document.getElementById("expertEmail").value="rbutler@ebsco.com";
+		}else if(expert=="Sarah Thompson"){
+			document.getElementById("expertEmail").value="sthompson@ebsco.com";
+		}else if(expert=="Glenn Petit"){
+			document.getElementById("expertEmail").value="gpetit@ebsco.com";
+		}else if(expert=="View Experts"){
+			document.getElementById("expertEmail").value="";
+		}else{
+			return;
+		}
+}
+function myFunction() {
+  document.getElementById("myDropdown").classList.toggle("show");
+}
+function myFunction2() {
+	if(document.getElementById("PI").value==""){
+    alert("Please select a product/interface.");
+}else{
+	document.getElementById("myDropdown2").classList.toggle("show");
+}
+  
+}
+//Conditional logic with alerts was added on 1/23/23 and works!. == seems to work, one = sign does not
+//Certain selections will not have support tasks to select and its important to prevent selections when there are no valid ones for certain selections.-->
+//a multitude of else if use cases will need to be added to this function-->
+function myFunction3() {
+if (document.getElementById("AOS").value=="VPAT"){
+	alert("Please consult the VPAT chat group on teams. Inquire with a colleague for access if you cannot see it on Teams.");
+}else if ((document.getElementById("AOS").value=="Authentication")&&(document.getElementById("PI").value=="Accel5")){
+	alert("Selection does not have support tasks to select!");
+	document.getElementById("ST").value="N/A";
+}else if ((document.getElementById("AOS").value=="Branding")&&(document.getElementById("PI").value=="Accel5")){
+	alert("Selection does not have support tasks to select!");
+	document.getElementById("ST").value="N/A";
+}else if ((document.getElementById("AOS").value=="Reporting")&&(document.getElementById("PI").value=="Accel5")){
+	alert("Selection does not have support tasks to select!");
+	document.getElementById("ST").value="N/A";
+}else if ((document.getElementById("AOS").value=="Site Functionality")&&(document.getElementById("PI").value=="Accel5")){
+	alert("Selection does not have support tasks to select!");
+	document.getElementById("ST").value="N/A";
+}else if ((document.getElementById("AOS").value=="Subscription Issue")&&(document.getElementById("PI").value=="Accel5")){
+	alert("Selection does not have support tasks to select!");
+	document.getElementById("ST").value="N/A";
+}else if ((document.getElementById("AOS").value=="Authentication")&&(document.getElementById("PI").value=="AP Newsroom")){
+	alert("Selection does not have support tasks to select!");
+	document.getElementById("ST").value="N/A";
+}else if ((document.getElementById("AOS").value=="Reporting")&&(document.getElementById("PI").value=="AP Newsroom")){
+	alert("Selection does not have support tasks to select!");
+	document.getElementById("ST").value="N/A";
+}else if ((document.getElementById("AOS").value=="Site Functionality")&&(document.getElementById("PI").value=="AP Newsroom")){
+	alert("Selection does not have support tasks to select!");
+	document.getElementById("ST").value="N/A";
+}else if ((document.getElementById("AOS").value=="Subscription Issue")&&(document.getElementById("PI").value=="AP Newsroom")){
+	alert("Selection does not have support tasks to select!");
+	document.getElementById("ST").value="N/A";
+}else if(document.getElementById("ST").value=="N/A"){
+    alert("Selected area of support does not have support tasks.");
+}else if(document.getElementById("AOS").value==""){
+    alert("Please select an area of support.");
+}else{
+	document.getElementById("myDropdown3").classList.toggle("show");
+}
+}
+function myFunction4() {
+	document.getElementById("myDropdown4").classList.toggle("show");
+}
+
+function SetupSelect(){
+    document.getElementById("AOS").value="Set Up";
+}
+
+function adminUpdateSelect(){
+	document.getElementById("ST").value="Admin Update";
+}
+
+//Function added 1/25/23: Going to hide all options to reduce the number of strings needed for this in later functions. When product/interface is clicked, area of support is cleared out until a selection is made, at which point the valid options will display. This will make this application considerably easier to add options and configure.  -->
+function hideAllAOS(){
+//hide all experts. this actually hides the option and moves lower options up unlike the button implementation.
+document.getElementById("AOS").value="";
+document.getElementById("ST").value="";
+document.getElementById("wr").style.visibility="hidden";
+document.getElementById("widg").style.visibility = "hidden";
+document.getElementById("cat").style.visibility = "hidden";
+document.getElementById("verf").style.visibility = "hidden";
+document.getElementById("languages").style.visibility = "hidden";
+document.getElementById("lim").style.visibility = "hidden";
+document.getElementById("brand").style.visibility = "hidden";
+document.getElementById("con").style.visibility = "hidden";
+document.getElementById("content").style.visibility = "hidden";
+document.getElementById("af").style.visibility = "hidden";
+document.getElementById("cat").style.visibility = "hidden";
+document.getElementById("del").style.visibility = "hidden";
+document.getElementById("np").style.visibility = "hidden";
+document.getElementById("con").style.visibility = "hidden";
+document.getElementById("sitef").style.visibility = "hidden";
+document.getElementById("vpat").style.visibility = "hidden";
+document.getElementById("report").style.visibility = "hidden";
+document.getElementById("bbb").style.visibility = "hidden";
+document.getElementById("content").style.visibility = "hidden";
+document.getElementById("setup").style.visibility = "hidden";
+document.getElementById("cleverDash").style.visibility = "hidden";
+document.getElementById("cleverEsc").style.visibility = "hidden";
+document.getElementById("func").style.visibility = "hidden";
+document.getElementById("aop").style.visibility = "hidden";
+document.getElementById("subs").style.visibility = "hidden";
+document.getElementById("fm").style.visibility = "hidden";
+document.getElementById("auth").style.visibility = "hidden";
+document.getElementById("sitef").style.visibility = "hidden";
+document.getElementById("report").style.visibility = "hidden";
+document.getElementById("subs").style.visibility = "hidden";
+document.getElementById("car").style.visibility = "hidden";
+document.getElementById("mrcebk").style.visibility = "hidden";
+document.getElementById("lauth").style.visibility = "hidden";
+document.getElementById("lnk").style.visibility = "hidden";
+document.getElementById("dft").style.visibility = "hidden";
+document.getElementById("psa").style.visibility = "hidden";
+document.getElementById("revise").style.visibility = "hidden";
+document.getElementById("err").style.visibility = "hidden";
+document.getElementById("authS").style.visibility = "hidden";
+}
+
+
+
+//AREA OF SUPPORT FUNCTIONS
+function brandSelect(){
+document.getElementById("AOS").value="Branding";
+}
+
+function fmSelect(){
+document.getElementById("AOS").value="Flipster Mobile";
+document.getElementById("auth").style.visibility="visible";
+}
+
+function resetForm() {
+document.getElementById("DDE").value="Options Reset!";
+document.getElementById("cat").style.visibility="visible";
+document.getElementById("verf").style.visibility="visible";
+document.getElementById("del").style.visibility="visible";
+document.getElementById("con").style.visibility="visible";
+document.getElementById("brand").style.visibility="visible";
+document.getElementById("languages").style.visibility="visible";
+document.getElementById("lim").style.visibility="visible";
+document.getElementById("sitef").style.visibility="visible";
+document.getElementById("subs").style.visibility="visible";
+document.getElementById("widg").style.visibility="visible";
+document.getElementById("vpat").style.visibility="visible";
+document.getElementById("report").style.visibility="visible";
+document.getElementById("bbb").style.visibility="visible";
+document.getElementById("content").style.visibility="visible";
+document.getElementById("setup").style.visibility="visible";
+document.getElementById("cleverDash").style.visibility="visible";
+document.getElementById("cleverEsc").style.visibility="visible";
+document.getElementById("func").style.visibility="visible";
+document.getElementById("aop").style.visibility="visible";
+document.getElementById("config").style.visibility="visible";
+document.getElementById("create").style.visibility="visible";
+document.getElementById("oai").style.visibility="visible";
+document.getElementById("relev").style.visibility="visible";
+document.getElementById("customize").style.visibility="visible";
+document.getElementById("standardadmin").style.visibility="visible";
+document.getElementById("standardVendor").style.visibility="visible";
+document.getElementById("trouble").style.visibility="visible";
+document.getElementById("auth").style.visibility="visible";
+document.getElementById("concept").style.visibility="visible";
+document.getElementById("alert").style.visibility="visible";
+document.getElementById("folderCreate").style.visibility="visible";
+document.getElementById("export").style.visibility="visible";
+document.getElementById("folderFunc").style.visibility="visible";
+document.getElementById("saved").style.visibility="visible";
+document.getElementById("cite").style.visibility="visible";
+document.getElementById("email").style.visibility="visible";
+document.getElementById("gDrive").style.visibility="visible";
+document.getElementById("setUp").style.visibility="visible";
+document.getElementById("viewRes").style.visibility="visible";
+document.getElementById("oai").style.visibility="visible";
+document.getElementById("relev").style.visibility="visible";
+}
+//Implemented 1/27/23: Downloads the contents of the JSOn file. Will be using this test the inclusion of form information.
+
+	const downloadFile = () => {
+         const link = document.createElement("a");
+         const file = new Blob([JSON.stringify(myJSON,null,2)], { type: 'application/json' });
+         link.href = URL.createObjectURL(file);
+         link.download = "JSON.txt";
+         link.click();
+         URL.revokeObjectURL(link.href);
+      };
+
+
+// Accesses and logs the properties of the input JSON object.
+function nlapilogexecution(inputJSON) {
+var inputJSON = JSON.parse(myJSON);
+var profile = inputJSON["case_profile"];
+var subject = inputJSON["case_subject"];
+var message = inputJSON["case_incomingmessage"];
+var institution = inputJSON["case_institution"];
+var origin = inputJSON["case_origin"];
+var contact = inputJSON["case_contact"];
+var email = inputJSON["case_email"];
+var priority = inputJSON["case_priority"];
+var casetype = inputJSON["basicCase"];
+
+console.log("Case Profile: " + profile);
+console.log("Case Subject: " + subject);
+console.log("Message: " + message);
+console.log("Institution: " + institution);
+console.log("Origin: " + origin);
+console.log("Contact: " + contact);
+console.log("Email: " + email);
+console.log("Priority: " + priority);
+console.log("Case Type: " + casetype);
+create();
+}
+
+
+
+function create(){
+setJSON();
+function create(){
+	function CreateCase(datain) {
+	
+			// Set Global Variables (defined in library_case.js)
+			// parameters to track validity of data -- assume valid
+			L_case_validData = true;
+			L_case_invalidfields = ''; 
+
+			// parameters to clean invalid field details
+			var invalidFields_cleaned = ''; //trims off the lead comma
+			var case_id = '';
+			var case_number = '';
+			var nlobjError = require('N/error');
+
+
+
+			
+			try
+			
+			{  	
+				
+				// Create the Case.  
+				var ca = nlapiCreateRecord('supportcase');
+				
+				//-------------------------------------------------------------------------//
+				//------------------Required Fields (all case forms)-----------------------//
+				//-------------------------------------------------------------------------//
+				
+				//--Profile-------------------------------------------
+				
+				if (datain.case_profile == null || datain.case_profile == '') 
+				{
+					L_case_validData = false;
+					L_case_invalidfields = L_case_invalidfields + ', missing Profile';
+				}
+				else 
+				{
+					ca.setFieldValue('profile',datain.case_profile);
+				}
+				
+				//--Title---------------------------------------------
+				
+				if (datain.case_subject == null || datain.case_subject == '') 
+				{
+					L_case_validData = false;
+					L_case_invalidfields = L_case_invalidfields + ', missing Subject';
+				}
+				else 
+				{
+					ca.setFieldValue('title',datain.case_subject);
+				}
+				
+				//--Customer------------------------------------------
+				
+				if (datain.case_institution == null || datain.case_institution == '') 
+				{
+					L_case_validData = false;
+					L_case_invalidfields = L_case_invalidfields + ', missing Institution';
+				}
+				else 
+				{
+					ca.setFieldValue('company',datain.case_institution);
+				}
+				
+				//--Origin--------------------------------------------
+				
+				if (datain.case_origin == null || datain.case_origin == '') 
+				{
+					L_case_validData = false;
+					L_case_invalidfields = L_case_invalidfields + ', missing Origin';
+				}
+				else 
+				{
+					ca.setFieldValue('origin',datain.case_origin);
+				}
+				
+				//--Incoming Message---------------------------------------
+				
+				if (datain.case_incomingmessage == null || datain.case_incomingmessage == '') 
+				{
+					L_case_validData = false;
+					L_case_invalidfields = L_case_invalidfields + ', missing Incomingmessage';
+				}
+				else 
+				{
+					ca.setFieldValue('incomingmessage', datain.case_incomingmessage);
+					ca.setFieldValue('messagenew', 'T');
+				}
+			
+					//-------------------------------------------------------------------------//
+					//------------------basic case capture-type cases--------------------------//
+					//-------------------------------------------------------------------------//
+					
+					
+					if (datain.basicCase == 'T')
+					{
+
+						
+						//--Contact------------------------------------------------
+						
+						if (datain.case_contact != null && datain.case_contact != '') 
+						{
+							ca.setFieldValue('contact', datain.case_contact);
+						}
+						
+						//--Contact email-- (we are allowing input to set email to blank)------------------
+						
+						if (datain.case_email != null) 
+						{
+							ca.setFieldValue('email', datain.case_email);
+						}
+						
+						//--Priority------------------------------------------------
+						
+						if (datain.case_priority != null && datain.case_priority != '') 
+						{
+							ca.setFieldValue('priority', datain.case_priority);
+						}
+						
+						//--Status------------------------------------------------
+						
+						ca.setFieldValue('status',LC_CaseStatus.NotStarted); 
+					}
+					
+					else
+					//not a basic case, currently not handling
+					{		L_case_validData = false;
+							L_case_invalidfields = '  Restlet only supports BasicCases at the moment';
+							
+					}
+				
+					
+					
+				if (L_case_validData == true)
+				{
+					case_id = nlapiSubmitRecord( ca );
+					case_number = nlapiLookupField('supportcase', case_id, 'casenumber')
+					nlapiLogExecution('DEBUG', 'id =' + case_id);
+					restlet_status = 'SUCCESS';
+					restlet_status_details = 'Case Created: ' + case_id;
+				}
+				
+				else 
+				{
+					if (L_case_invalidfields)
+					{
+						invalidFields_cleaned = L_case_invalidfields.substring(2);
+						nlapiLogExecution('debug', 'validData NOT true',  'invalidfields: '+invalidFields_cleaned);
+						//Required fields missing
+						restlet_status = 'ERROR';
+						restlet_status_details = 'Field errors: ' + invalidFields_cleaned;	
+					}		
+				}
+			}	
+			
+				
+			
+			catch ( e )
+			{
+				if ( e instanceof nlobjError )
+				{
+					nlapiLogExecution( 'DEBUG', 'system error', e.getCode() + '\n' + e.getDetails() );
+						
+					restlet_status_details = 'CreateCase Restlet SYSTEM ERROR:  ' + e.getCode() + '\n' + e.getDetails();
+					restlet_status = 'ERROR';						
+				}		
+				else
+				{
+					nlapiLogExecution( 'DEBUG', 'unexpected error', e.toString() );
+					restlet_status_details = 'CreateCase Restlet UNEXPECTED ERROR:  ' +  e.toString();
+					restlet_status = 'ERROR';
+				}		
+			}		
+			
+			var dataOut = {restlet_status: restlet_status, case_id: case_id, case_number: case_number, restlet_status_details: restlet_status_details};
+			nlapiLogExecution('debug', 'RESTLET CreateCase ended...');	
+			let CRMresponse=dataout;
+			document.getElementById("crmre")=CRMResponse; //trying to get the response from CRM to appear in the form for troubleshooting purposes
+			return(dataOut);	
+		}
+
+if ((document.getElementById("DDE").value=="Invalid Selection!")||(document.getElementById("DDE").value=="")){
+	alert("Please select a valid DDE request type.");
+}else{
+	alert("Details valid. Case being created in CRM.");
+	CreateCase(myJSON);
+}
+}
+}
+</script>
+</body>
+</html>
