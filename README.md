@@ -4,8 +4,8 @@ This application is designed to connect to a Restlet and use information set by 
 
 Features:
 
--Taxonomy dropdowns: Smart select items that expand and limit choices in line with available GCS taxonomy. (in progress)
+-Taxonomy dropdowns: Smart select items that expand and limit choices in line with available GCS taxonomy. _**(in progress)**_
 
--Emailing expert prior to escalation (implemented)
+-Emailing expert prior to escalation **(implemented)**
 
--Instant escalation ticket creation. (in progress)
+-Instant escalation ticket creation. _(in progress)_
